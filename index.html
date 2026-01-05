@@ -124,13 +124,13 @@
         <div id="start-view" class="view active">
             <h1>אתגר חוק פיטס</h1>
             <p>בניסוי זה נבדוק כמה מהר אתם יכולים להזיז את העכבר (או האצבע) בין שתי מטרות.</p>
-            <p>המשחק מורכב משני שלבים. בכל שלב עליכם ללחוץ על העיגול האדום, ואז על השני, הלוך ושוב, 20 פעמים.</p>
+            <p>המשחק מורכב משני שלבים. בכל שלב עליכם ללחוץ על העיגול האדום, ואז על השני, הלוך ושוב, 12 פעמים.</p>
             <p>מוכנים? נסו להיות הכי מהירים שאתם יכולים!</p>
             <button class="btn" onclick="startGame()">התחל ניסוי</button>
         </div>
 
         <div id="game-view" class="view">
-            <div id="hud">לחיצות נותרות: <span id="taps-left">20</span></div>
+            <div id="hud">לחיצות נותרות: <span id="taps-left">12</span></div>
             <div id="game-area">
                 <div id="target1" class="target">1</div>
                 <div id="target2" class="target">2</div>
@@ -165,8 +165,8 @@
     <script>
         // משתנים גלובליים לניהול המצב
         let currentPhase = 1; // 1 = קל, 2 = קשה
-        let tapsRemaining = 20;
-        const TOTAL_TAPS = 20;
+        let tapsRemaining = 12;
+        const TOTAL_TAPS = 12; // שונה מ-20 ל-12
         let activeTargetId = 'target1'; // המטרה הנוכחית שצריך ללחוץ עליה
         let startTime, endTime;
         let results = { easy: 0, hard: 0 };
