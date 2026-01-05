@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>הדגמת חוק פיטס (Fitts's Law Demo)</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            color: #333;
+        }
+
+        #game-container {
+            width: 800px;
+            height: 600px;
+            background-color: #fff;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+            text-align: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        /* Views (Start, Game, Results) */
+        .view {
+            display: none;
+            height: 100%;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .view.active {
+            display: flex;
+        }
+
+        /* Typography & Buttons */
+        h1 { color: #2c3e50; margin-bottom: 10px; }
+        p { font-size: 1.2rem; line-height: 1.6; color: #555; max-width: 600px; }
+        
+        .btn {
+            padding: 15px 30px;
+            font-size: 1.5rem;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin-top: 20px;
+        }
+        .btn:hover { background-color: #2980b9; }
+
+        /* Game Area */
+        #game-area {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            /* border: 2px dashed #eee; */
+        }
+
+        .target {
+            position: absolute;
+            border-radius: 50%;
+            background-color: #bdc3c7; /* Inactive color */
+            cursor: crosshair;
+            transition: background-color 0.1s, transform 0.1s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            color: white;
+            user-select: none;
+        }
+
+        .target.active {
+            background-color: #e74c3c; /* Active target color (Red) */
+            box-shadow: 0 0 15px rgba(231, 76, 60, 0.6);
+            transform: scale(1.05);
+            z-index: 10;
+        }
+
+        #hud {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 1.5rem;
+            background: rgba(255,255,255,0.9);
+            padding: 10px 20px;
+            border-radius: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        /* Results Styling */
+        .result-box {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 10px;
+            width: 80%;
+            display: flex;
+            justify-content: space-between;
+            font-size: 1.3rem;
+        }
+        .time-highlight {
+            font-weight: bold;
+            color: #e74c3c;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        
+        <div id="start-view" class="view active">
+            <h1>אתגר חוק פיטס</h1>
+            <p>בניסוי זה נבדוק כמה מהר אתם יכולים להזיז את העכבר (או האצבע) בין שתי מטרות.</p>
+            <p>המשחק מורכב משני שלבים. בכל שלב עליכם ללחוץ על העיגול האדום, ואז על השני, הלוך ושוב, 20 פעמים.</p>
+            <p>מוכנים? נסו להיות הכי מהירים שאתם יכולים!</p>
+            <button class="btn" onclick="startGame()">התחל ניסוי</button>
+        </div>
+
+        <div id="game-view" class="view">
+            <div id="hud">לחיצות נותרות: <span id="taps-left">20</span></div>
+            <div id="game-area">
+                <div id="target1" class="target">1</div>
+                <div id="target2" class="target">2</div>
+            </div>
+        </div>
+
+        <div id="results-view" class="view">
+            <h1>תוצאות הניסוי</h1>
+            
+            <div class="result-box">
+                <span>שלב 1 (מטרות גדולות וקרובות):</span>
+                <span class="time-highlight" id="time-easy">0 שניות</span>
+            </div>
+            
+            <div class="result-box">
+                <span>שלב 2 (מטרות קטנות ורחוקות):</span>
+                <span class="time-highlight" id="time-hard">0 שניות</span>
+            </div>
+
+            <p style="margin-top: 30px; font-weight: bold;">ההסבר (חוק פיטס):</p>
+            <p>
+                כפי שראיתם, כשהמטרות קטנות יותר והמרחק ביניהן גדול יותר, הזמן שלוקח לבצע את הפעולה עולה משמעותית.
+                המוח מאלץ את היד להאט כדי לדייק בפגיעה.
+                <br>
+                בעיצוב ממשק, אנחנו שואפים תמיד למצב של "שלב 1" כדי להקל על המשתמש.
+            </p>
+            <button class="btn" onclick="resetGame()">נסה שוב</button>
+        </div>
+
+    </div>
+
+    <script>
+        // משתנים גלובליים לניהול המצב
+        let currentPhase = 1; // 1 = קל, 2 = קשה
+        let tapsRemaining = 20;
+        const TOTAL_TAPS = 20;
+        let activeTargetId = 'target1'; // המטרה הנוכחית שצריך ללחוץ עליה
+        let startTime, endTime;
+        let results = { easy: 0, hard: 0 };
+
+        const target1 = document.getElementById('target1');
+        const target2 = document.getElementById('target2');
+        const tapsLeftDisplay = document.getElementById('taps-left');
+
+        // פונקציה להתחלת המשחק
+        function startGame() {
+            document.getElementById('start-view').classList.remove('active');
+            document.getElementById('game-view').classList.add('active');
+            setupPhase(1);
+        }
+
+        // הגדרת השלב (מיקום וגודל המטרות)
+        function setupPhase(phase) {
+            currentPhase = phase;
+            tapsRemaining = TOTAL_TAPS;
+            tapsLeftDisplay.innerText = tapsRemaining;
+            activeTargetId = 'target1';
+            updateActiveTargetStyle();
+
+            // הסרת מאזיני לחיצה קודמים כדי למנוע כפילויות
+            target1.onclick = null;
+            target2.onclick = null;
+
+            if (phase === 1) {
+                // --- שלב 1: קל (גדול וקרוב) ---
+                // גודל: 150px, מרחק: קרוב למרכז
+                setTargetStyle(target1, 150, '50%', '30%'); // top, left
+                setTargetStyle(target2, 150, '50%', '70%');
+            } else {
+                // --- שלב 2: קשה (קטן ורחוק) ---
+                // גודל: 40px, מרחק: פינות נגדיות
+                setTargetStyle(target1, 40, '10%', '10%');
+                setTargetStyle(target2, 40, '90%', '90%');
+            }
+
+            // הוספת מאזיני לחיצה
+            target1.onclick = () => handleTap('target1');
+            target2.onclick = () => handleTap('target2');
+
+            // התחלת טיימר
+            startTime = new Date().getTime();
+        }
+
+        // פונקציית עזר לשינוי סגנון המטרות
+        function setTargetStyle(element, size, top, left) {
+            element.style.width = size + 'px';
+            element.style.height = size + 'px';
+            element.style.top = top;
+            element.style.left = left;
+            // איפוס טרנספורמציה כדי למרכז את האלמנט על הנקודה
+            element.style.transform = 'translate(-50%, -50%)'; 
+        }
+
+        // טיפול בלחיצה על מטרה
+        function handleTap(clickedId) {
+            if (clickedId !== activeTargetId) {
+                // לחצו על המטרה הלא נכונה - אפשר להוסיף צליל שגיאה או להתעלם
+                return; 
+            }
+
+            // לחיצה נכונה
+            tapsRemaining--;
+            tapsLeftDisplay.innerText = tapsRemaining;
+
+            if (tapsRemaining <= 0) {
+                endPhase();
+            } else {
+                // החלפת המטרה הפעילה
+                activeTargetId = (activeTargetId === 'target1') ? 'target2' : 'target1';
+                updateActiveTargetStyle();
+            }
+        }
+
+        // עדכון ויזואלי של המטרה הפעילה (האדומה)
+        function updateActiveTargetStyle() {
+            if (activeTargetId === 'target1') {
+                target1.classList.add('active');
+                target2.classList.remove('active');
+            } else {
+                target2.classList.add('active');
+                target1.classList.remove('active');
+            }
+        }
+
+        // סיום שלב
+        function endPhase() {
+            endTime = new Date().getTime();
+            const duration = (endTime - startTime) / 1000; // המרה לשניות
+
+            if (currentPhase === 1) {
+                results.easy = duration.toFixed(2);
+                // מעבר אוטומטי לשלב 2
+                setupPhase(2);
+            } else {
+                results.hard = duration.toFixed(2);
+                showResults();
+            }
+        }
+
+        // הצגת מסך התוצאות
+        function showResults() {
+            document.getElementById('game-view').classList.remove('active');
+            document.getElementById('results-view').classList.add('active');
+
+            document.getElementById('time-easy').innerText = results.easy + ' שניות';
+            document.getElementById('time-hard').innerText = results.hard + ' שניות';
+        }
+
+        // איפוס המשחק להתחלה
+        function resetGame() {
+            document.getElementById('results-view').classList.remove('active');
+            document.getElementById('start-view').classList.add('active');
+            results = { easy: 0, hard: 0 };
+        }
+    </script>
+</body>
+</html>
